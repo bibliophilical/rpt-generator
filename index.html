@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penjana Rancangan Pengajian Tahunan (RPT) Sekolah</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Vue 3 Global Build -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Roboto Mono', 'monospace'],
+                    },
+                    colors: {
+                        kpm: {
+                            blue: '#003399',
+                            darkblue: '#002266',
+                            gold: '#D4AF37',
+                            light: '#F0F4FF'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom scrollbar for form panel */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Printable area styles */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                font-size: 10pt !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .print-area {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                transform: none !important;
+                overflow: visible !important;
+            }
+            .signature-block, .page-break-inside-avoid {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+            }
+            th, td {
+                border: 1px solid #111827 !important;
+                padding: 5px 6px !important;
+            }
+        }
+
+        /* Styling for content rendered inside preview */
+        .preview-content table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .preview-content th, .preview-content td {
+            border: 1px solid #334155;
+            word-wrap: break-word;
+        }
+        
+        /* Auto expanding textareas */
+        textarea {
+            field-sizing: content;
+            min-height: 48px;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <div id="app" class="flex flex-col flex-1 h-screen overflow-hidden">
+        <!-- Dynamic Print Orientation CSS Rule -->
+        <component is="style">
+            @media print {
+                @page {
+                    size: A4 {{ doc.settings.orientation }};
+                    margin: 10mm;
+                }
+            }
+        </component>
+        
+        <!-- TOP NAVBAR / HEADER -->
+        <header class="bg-slate-900 text-white px-4 py-3 flex flex-wrap items-center justify-between border-b border-slate-800 shrink-0 no-print z-20">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-file-invoice text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight flex items-center gap-2">
+                        Penjana RPT Sekolah
+                        <span class="bg-blue-500/20 text-blue-300 text-xs px-2 py-0.5 rounded-full border border-blue-400/30 font-normal">KPM Standard</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Sistem Pengurusan & Penjanaan Rancangan Pengajian Tahunan (Bahasa Inggeris & Umum)</p>
+                </div>
+            </div>
+
+            <!-- Quick Action Toolbar -->
+            <div class="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
+                <button @click="loadSampleData('bi')" 
+                        title="Muat contoh RPT Bahasa Inggeris Cikgu Zaman"
+                        class="bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Contoh RPT BI
+                </button>
+
+                <button @click="loadSampleData('ppki')" 
+                        title="Muat contoh RPT Pendidikan Khas / Prasekolah"
+                        class="bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-graduation-cap"></i> Contoh PPKI/Pra
+                </button>
+
+                <div class="h-6 w-px bg-slate-700 mx-1 hidden md:block"></div>
+
+                <button @click="triggerImport" 
+                        class="bg-slate-700 hover:bg-slate-600 text-xs font-medium px-2.5 py-2 rounded-lg transition-all flex items-center gap-1.5 text-slate-200">
+                    <i class="fa-solid fa-upload text-slate-400"></i> Import JSON
+                </button>
+                <input type="file" ref="fileInput" @change="importJSON" accept=".json" class="hidden">
+
+                <button @click="exportJSON" 
+                        class="bg-slate-700 hover:bg-slate-600 text-xs font-medium px-2.5 py-2 rounded-lg transition-all flex items-center gap-1.5 text-slate-200">
+                    <i class="fa-solid fa-download text-slate-400"></i> Eksport JSON
+                </button>
+
+                <button @click="resetForm" 
+                        class="bg-slate-800 hover:bg-rose-900/40 text-rose-300 hover:text-rose-200 border border-slate-700 hover:border-rose-500/50 text-xs font-medium px-2.5 py-2 rounded-lg transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-left"></i> Reset
+                </button>
+
+                <div class="h-6 w-px bg-slate-700 mx-1 hidden md:block"></div>
+
+                <button @click="copyHtmlCode" 
+                        class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-regular fa-copy"></i> Salin HTML
+                </button>
+
+                <button @click="printDocument" 
+                        class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition-all flex items-center gap-1.5 shadow-lg shadow-blue-600/30">
+                    <i class="fa-solid fa-print"></i> Cetak / PDF
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN SPLIT CONTENT WORKSPACE -->
+        <main class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+
+            <!-- LEFT PANEL: FORM INPUT EDITOR -->
+            <section class="w-full lg:w-1/2 xl:w-5/12 bg-slate-50 border-r border-slate-200 flex flex-col h-full overflow-hidden no-print">
+                
+                <!-- Input Navigation Tabs -->
+                <div class="bg-white px-4 border-b border-slate-200 flex items-center justify-between shrink-0">
+                    <div class="flex space-x-1">
+                        <button @click="activeTab = 'meta'" 
+                                :class="activeTab === 'meta' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-slate-500 hover:text-slate-700'"
+                                class="py-3 px-3 text-xs sm:text-sm border-b-2 flex items-center gap-2 transition-colors">
+                            <i class="fa-solid fa-school text-slate-400"></i>
+                            1. Maklumat Umum & Dokumen
+                        </button>
+                        <button @click="activeTab = 'items'" 
+                                :class="activeTab === 'items' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-slate-500 hover:text-slate-700'"
+                                class="py-3 px-3 text-xs sm:text-sm border-b-2 flex items-center gap-2 transition-colors">
+                            <i class="fa-solid fa-list-check text-slate-400"></i>
+                            2. Kandungan RPT ({{ doc.items.length }})
+                        </button>
+                        <button @click="activeTab = 'settings'" 
+                                :class="activeTab === 'settings' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-slate-500 hover:text-slate-700'"
+                                class="py-3 px-3 text-xs sm:text-sm border-b-2 flex items-center gap-2 transition-colors">
+                            <i class="fa-solid fa-sliders text-slate-400"></i>
+                            3. Tetapan Paparan
+                        </button>
+                    </div>
+
+                    <div class="text-xs text-slate-400 hidden sm:block">
+                        Auto-tersimpan
+                    </div>
+                </div>
+
+                <!-- Form Scrollable Container -->
+                <div class="flex-1 overflow-y-auto p-4 space-y-6">
+
+                    <!-- TAB 1: MAKLUMAT UMUM (METADATA) -->
+                    <div v-show="activeTab === 'meta'" class="space-y-4">
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b pb-2 border-slate-100">
+                                <i class="fa-solid fa-building-columns text-blue-600"></i>
+                                Header & Maklumat Sekolah
+                            </h3>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="sm:col-span-2">
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Kementerian / PPD / Sekolah Header</label>
+                                    <input type="text" v-model="doc.meta.kementerian" placeholder="KEMENTERIAN PENDIDIKAN MALAYSIA" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                </div>
+                                
+                                <div class="sm:col-span-2">
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Sekolah</label>
+                                    <input type="text" v-model="doc.meta.namaSekolah" placeholder="SK SERI PERMAI" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tajuk Dokumen Utama</label>
+                                    <input type="text" v-model="doc.meta.tajukDokumen" placeholder="RANCANGAN PENGAJARAN TAHUNAN" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Sesi Persekolahan / Tahun</label>
+                                    <input type="text" v-model="doc.meta.tahunSesi" placeholder="2026 / 2027" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b pb-2 border-slate-100">
+                                <i class="fa-solid fa-book-open text-blue-600"></i>
+                                Maklumat Mata Pelajaran & Kelas
+                            </h3>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Mata Pelajaran (Subjek)</label>
+                                    <input type="text" v-model="doc.meta.subjek" placeholder="BAHASA INGGERIS" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none font-semibold text-slate-800">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Kelas / Kumpulan / Tahun</label>
+                                    <input type="text" v-model="doc.meta.kelas" placeholder="PRASEKOLAH / TAHUN 1" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Guru Mata Pelajaran</label>
+                                    <input type="text" v-model="doc.meta.namaGuru" placeholder="CIKGU AHMAD ZAMAN BIN ABDULLAH" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Guru Besar / Pengetua</label>
+                                    <input type="text" v-model="doc.meta.namaGuruBesar" placeholder="PUAN HJH. SITI AMINAH BINTI KASSIM" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Jawatan Pentadbir Semakan</label>
+                                    <input type="text" v-model="doc.meta.jawatanPentadbir" placeholder="Guru Besar / GPK Pentadbiran" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                </div>
+
+                                <div class="sm:col-span-2">
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Logo Sekolah (Muat Naik dari Komputer / Telefon)</label>
+                                    <div class="flex items-center space-x-2">
+                                        <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 text-xs font-medium px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors">
+                                            <i class="fa-solid fa-cloud-arrow-up text-blue-600"></i> Pilih Fail Gambar Logo
+                                            <input type="file" @change="handleLogoUpload" accept="image/*" class="hidden">
+                                        </label>
+                                        <button v-if="doc.meta.logoDataUrl" @click="removeLogo" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-medium px-2.5 py-2 rounded-lg transition-colors flex items-center gap-1">
+                                            <i class="fa-solid fa-trash-can"></i> Buang Logo
+                                        </button>
+                                    </div>
+                                    <div v-if="doc.meta.logoDataUrl" class="mt-2 flex items-center space-x-2">
+                                        <img :src="doc.meta.logoDataUrl" class="h-10 w-10 object-contain border border-slate-200 rounded bg-white p-0.5">
+                                        <span class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                                            <i class="fa-solid fa-circle-check"></i> Logo sedia digunakan dalam dokumen
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notice/Instructions -->
+                        <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-800 flex items-start gap-2.5">
+                            <i class="fa-solid fa-circle-info text-blue-600 text-sm mt-0.5"></i>
+                            <div>
+                                <span class="font-bold">Petua Pengisian:</span> Maklumat yang anda masukkan di sini akan secara automatik dikemas kini pada dokumen rasmi di bahagian sebelah kanan secara real-time.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: SENARAI KANDUNGAN RPT (UNITS / WEEKS) -->
+                    <div v-show="activeTab === 'items'" class="space-y-4">
+
+                        <!-- Filter & Quick Add Toolbar -->
+                        <div class="flex items-center justify-between gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="relative flex-1">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                                <input type="text" v-model="searchQuery" placeholder="Cari Minggu, SK, SP atau Aktiviti..." class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            </div>
+                            
+                            <button @click="addNewItem" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 shrink-0">
+                                <i class="fa-solid fa-plus"></i> Tambah Minggu
+                            </button>
+                        </div>
+
+                        <!-- List of Entries (Accordions / Cards) -->
+                        <div class="space-y-3">
+                            <div v-for="(item, index) in filteredItems" :key="item.id" 
+                                 class="bg-white border rounded-xl shadow-sm transition-all overflow-hidden"
+                                 :class="activeItemAccordion === item.id ? 'border-blue-400 ring-1 ring-blue-300' : 'border-slate-200 hover:border-slate-300'">
+                                
+                                <!-- Card Header -->
+                                <div class="px-4 py-3 bg-slate-50 flex items-center justify-between cursor-pointer select-none border-b border-slate-100"
+                                     @click="toggleAccordion(item.id)">
+                                    <div class="flex items-center space-x-3 truncate">
+                                        <span class="bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded-md shrink-0">
+                                            #{{ index + 1 }}
+                                        </span>
+                                        <div class="truncate">
+                                            <div class="text-xs font-bold text-slate-800 truncate">
+                                                {{ item.minggu || 'Minggu Baru' }}
+                                            </div>
+                                            <div class="text-[11px] text-slate-500 truncate">
+                                                {{ item.kemahiran || 'Tiada Kemahiran Spesifik' }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center space-x-1" @click.stop>
+                                        <!-- Reordering Buttons -->
+                                        <button @click="moveItem(index, -1)" :disabled="index === 0" class="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30 text-xs">
+                                            <i class="fa-solid fa-arrow-up"></i>
+                                        </button>
+                                        <button @click="moveItem(index, 1)" :disabled="index === doc.items.length - 1" class="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30 text-xs">
+                                            <i class="fa-solid fa-arrow-down"></i>
+                                        </button>
+                                        <button @click="duplicateItem(index)" title="Duplikasi item ini" class="p-1 text-slate-400 hover:text-blue-600 text-xs">
+                                            <i class="fa-regular fa-copy"></i>
+                                        </button>
+                                        <button @click="removeItem(index)" title="Padam item ini" class="p-1 text-slate-400 hover:text-rose-600 text-xs">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                        <button @click="toggleAccordion(item.id)" class="p-1 text-slate-400 hover:text-slate-700 text-xs ml-1">
+                                            <i :class="activeItemAccordion === item.id ? 'fa-chevron-up' : 'fa-chevron-down'" class="fa-solid"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Card Body (Expanded Form Fields) -->
+                                <div v-show="activeItemAccordion === item.id" class="p-4 space-y-3 bg-white">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Penggal / Minggu / Tarikh</label>
+                                            <input type="text" v-model="item.minggu" placeholder="MINGGU 1 (10 - 14 MAC)" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-1 focus:ring-blue-500 font-semibold text-blue-900">
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Tajuk / Tema / Skill Category</label>
+                                            <input type="text" v-model="item.kemahiran" placeholder="SKILL 1: LISTENING & SPEAKING" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-1 focus:ring-blue-500">
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label class="block text-[11px] font-bold text-slate-600">Standard Kandungan (SK)</label>
+                                            <span class="text-[10px] text-slate-400">Gunakan baris baru untuk point asing</span>
+                                        </div>
+                                        <textarea v-model="item.sk" rows="2" placeholder="BI 1.1 Recognise the sounds in songs and spoken language..." class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-1 focus:ring-blue-500 font-mono text-slate-700"></textarea>
+                                    </div>
+
+                                    <div>
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label class="block text-[11px] font-bold text-slate-600">Standard Pembelajaran (SP)</label>
+                                            <span class="text-[10px] text-slate-400">Gunakan baris baru untuk point asing</span>
+                                        </div>
+                                        <textarea v-model="item.sp" rows="3" placeholder="BI 1.1.1 Listen and recognise sounds&#10;BI 1.1.2 Listen and respond to rhymes..." class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-1 focus:ring-blue-500 font-mono text-slate-700"></textarea>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Cadangan Aktiviti Pengajaran & Pembelajaran</label>
+                                        <textarea v-model="item.aktiviti" rows="3" placeholder="1. Teacher plays greeting song&#10;2. Pupils sing along with gestures&#10;3. Roleplay greeting peers" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-1 focus:ring-blue-500 text-slate-700"></textarea>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Bahan / Catatan / BBB / EMK / Impak</label>
+                                        <textarea v-model="item.catatan" rows="2" placeholder="BBB: Speaker, Flashcards&#10;EMK: Bahasa, Nilai Murni" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-1 focus:ring-blue-500 text-slate-700"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-if="doc.items.length === 0" class="text-center py-10 bg-white rounded-xl border border-dashed border-slate-300 text-slate-400 p-6">
+                                <i class="fa-regular fa-folder-open text-3xl mb-2 text-slate-300"></i>
+                                <p class="text-xs">Tiada rekod RPT lagi. Klik butang di bawah untuk menambah atau muat contoh data.</p>
+                                <button @click="addNewItem" class="mt-3 bg-blue-600 text-white text-xs px-4 py-2 rounded-lg font-semibold hover:bg-blue-500">
+                                    + Tambah Rekod Minggu Pertama
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: TETAPAN PAPARAN & REKABENTUK -->
+                    <div v-show="activeTab === 'settings'" class="space-y-4">
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b pb-2 border-slate-100">
+                                <i class="fa-solid fa-paint-roller text-blue-600"></i>
+                                Gaya & Tema Dokumen
+                            </h3>
+
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Warna Header Jadual Dokumen</label>
+                                    <div class="flex items-center space-x-2">
+                                        <button v-for="color in themeColors" :key="color.name" 
+                                                @click="doc.settings.themeColor = color.class"
+                                                :class="[color.class, doc.settings.themeColor === color.class ? 'ring-2 ring-offset-2 ring-blue-500' : '']"
+                                                class="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center text-white text-xs transition-transform hover:scale-105">
+                                            <i v-if="doc.settings.themeColor === color.class" class="fa-solid fa-check"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3 pt-2">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Saiz Fon Text Jadual</label>
+                                        <select v-model="doc.settings.fontSize" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                            <option value="text-[10px]">Sangat Kecil (Compact)</option>
+                                            <option value="text-xs">Sederhana (Standard KPM)</option>
+                                            <option value="text-sm">Besar (Mudah Dibaca)</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Orientasi Kertas Cetak</label>
+                                        <select v-model="doc.settings.orientation" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                            <option value="portrait">Portrait (Menegak - Lalai)</option>
+                                            <option value="landscape">Landscape (Melintang)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="pt-2 border-t border-slate-100 space-y-2">
+                                    <label class="flex items-center space-x-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                                        <input type="checkbox" v-model="doc.settings.showSignatures" class="rounded text-blue-600 focus:ring-blue-500">
+                                        <span>Paparkan Ruangan Tandatangan Pengesahan</span>
+                                    </label>
+
+                                    <label class="flex items-center space-x-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                                        <input type="checkbox" v-model="doc.settings.showLogo" class="rounded text-blue-600 focus:ring-blue-500">
+                                        <span>Paparkan Logo Sekolah Dalam Header</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Left Panel Footer Toolbar -->
+                <div class="p-3 bg-white border-t border-slate-200 flex items-center justify-between shrink-0">
+                    <span class="text-xs text-slate-500">
+                        Jumlah Item: <strong class="text-slate-800">{{ doc.items.length }} Minggu</strong>
+                    </span>
+
+                    <button @click="addNewItem" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-plus"></i> Tambah Entri Minggu
+                    </button>
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: LIVE DOCUMENT PREVIEW -->
+            <section class="w-full lg:w-1/2 xl:w-7/12 bg-slate-200/80 flex flex-col h-full overflow-hidden relative">
+                
+                <!-- Live Preview Top Toolbar -->
+                <div class="bg-slate-800 text-slate-300 px-4 py-2 border-b border-slate-700 flex items-center justify-between shrink-0 no-print">
+                    <div class="flex items-center space-x-2 text-xs">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="font-bold text-white tracking-wide uppercase text-[11px]">Paparan Dokumen Live</span>
+                        <span class="text-slate-400">| A4 {{ doc.settings.orientation === 'landscape' ? 'Landscape' : 'Portrait' }}</span>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <!-- Quick Orientation Switcher -->
+                        <div class="flex items-center bg-slate-700 rounded-lg p-0.5 text-xs">
+                            <button @click="doc.settings.orientation = 'portrait'" 
+                                    :class="doc.settings.orientation === 'portrait' ? 'bg-blue-600 text-white font-semibold' : 'text-slate-300 hover:text-white'"
+                                    class="px-2 py-1 rounded text-[11px] transition-all flex items-center gap-1">
+                                <i class="fa-solid fa-file text-[10px]"></i> Potret
+                            </button>
+                            <button @click="doc.settings.orientation = 'landscape'" 
+                                    :class="doc.settings.orientation === 'landscape' ? 'bg-blue-600 text-white font-semibold' : 'text-slate-300 hover:text-white'"
+                                    class="px-2 py-1 rounded text-[11px] transition-all flex items-center gap-1">
+                                <i class="fa-solid fa-file-lines text-[10px] rotate-90"></i> Landskap
+                            </button>
+                        </div>
+
+                        <!-- Zoom Controls -->
+                        <div class="flex items-center space-x-1 bg-slate-700 rounded-lg p-0.5 text-xs">
+                            <button @click="zoomOut" class="px-2 py-0.5 hover:bg-slate-600 rounded text-slate-200">-</button>
+                            <span class="px-2 font-mono text-[11px] text-slate-300">{{ zoomLevel }}%</span>
+                            <button @click="zoomIn" class="px-2 py-0.5 hover:bg-slate-600 rounded text-slate-200">+</button>
+                            <button @click="zoomReset" class="px-1.5 py-0.5 hover:bg-slate-600 rounded text-slate-400" title="Reset Zoom">
+                                <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scrollable Document Preview Container -->
+                <div class="flex-1 overflow-auto p-4 sm:p-6 flex justify-center items-start">
+                    
+                    <!-- Paper Page Simulation -->
+                    <div id="rpt-document-printable"
+                         class="print-area bg-white shadow-2xl rounded-sm p-6 sm:p-10 transition-all duration-200 text-slate-900 border border-slate-300"
+                         :style="{ 
+                            transform: `scale(${zoomLevel / 100})`, 
+                            transformOrigin: 'top center',
+                            width: doc.settings.orientation === 'landscape' ? '297mm' : '210mm',
+                            minHeight: doc.settings.orientation === 'landscape' ? '210mm' : '297mm'
+                         }">
+
+                        <!-- OFFICIAL HEADER SECTION -->
+                        <div class="border-b-2 border-slate-900 pb-4 mb-4">
+                            <div class="flex items-center justify-between gap-4">
+                                <div v-if="doc.settings.showLogo && doc.meta.logoDataUrl" class="shrink-0">
+                                    <img :src="doc.meta.logoDataUrl" alt="Logo Sekolah" class="h-16 w-16 object-contain">
+                                </div>
+                                <div class="text-center flex-1">
+                                    <h4 class="text-xs font-bold uppercase tracking-widest text-slate-600">{{ doc.meta.kementerian }}</h4>
+                                    <h2 class="text-lg font-black uppercase text-slate-900 tracking-wide mt-0.5">{{ doc.meta.namaSekolah }}</h2>
+                                    <h3 class="text-sm font-extrabold uppercase text-blue-900 mt-1 bg-blue-50 py-1 border-y border-blue-200 tracking-wider">
+                                        {{ doc.meta.tajukDokumen }} {{ doc.meta.subjek }} ({{ doc.meta.kelas }}) SESI {{ doc.meta.tahunSesi }}
+                                    </h3>
+                                </div>
+                            </div>
+
+                            <!-- Document Info Grid Block -->
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mt-3 pt-2 border-t border-slate-200 font-medium text-slate-700">
+                                <div><span class="text-slate-500">Mata Pelajaran:</span> <strong class="text-slate-900 uppercase">{{ doc.meta.subjek }}</strong></div>
+                                <div><span class="text-slate-500">Kelas / Kumpulan:</span> <strong class="text-slate-900 uppercase">{{ doc.meta.kelas }}</strong></div>
+                                <div><span class="text-slate-500">Guru Mata Pelajaran:</span> <strong class="text-slate-900 uppercase">{{ doc.meta.namaGuru }}</strong></div>
+                                <div><span class="text-slate-500">Sesi Persekolahan:</span> <strong class="text-slate-900 uppercase">{{ doc.meta.tahunSesi }}</strong></div>
+                            </div>
+                        </div>
+
+                        <!-- MAIN RPT DATA TABLE -->
+                        <div class="preview-content overflow-x-auto">
+                            <table class="w-full text-left border-collapse border border-slate-800" :class="doc.settings.fontSize">
+                                <thead>
+                                    <tr :class="doc.settings.themeColor" class="text-white text-center font-bold uppercase tracking-wider uppercase">
+                                        <th class="py-2 px-3 border border-slate-800 w-[12%] text-xs">Penggal / Minggu / Skill</th>
+                                        <th class="py-2 px-3 border border-slate-800 w-[20%] text-xs">Standard Kandungan (SK)</th>
+                                        <th class="py-2 px-3 border border-slate-800 w-[24%] text-xs">Standard Pembelajaran (SP)</th>
+                                        <th class="py-2 px-3 border border-slate-800 w-[28%] text-xs">Cadangan Aktiviti Pembelajaran</th>
+                                        <th class="py-2 px-3 border border-slate-800 w-[16%] text-xs">Catatan / BBB / Impak</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(item, idx) in doc.items" :key="item.id" class="hover:bg-blue-50/30 transition-colors page-break-inside-avoid">
+                                        <!-- Column 1: Minggu & Skill -->
+                                        <td class="p-2.5 border border-slate-800 align-top bg-slate-50/50">
+                                            <div class="font-bold text-slate-900 uppercase border-b border-slate-300 pb-1 mb-1">
+                                                {{ item.minggu }}
+                                            </div>
+                                            <div v-if="item.kemahiran" class="text-blue-900 font-bold text-[11px] bg-blue-100/60 p-1 rounded border border-blue-200">
+                                                {{ item.kemahiran }}
+                                            </div>
+                                        </td>
+
+                                        <!-- Column 2: Standard Kandungan (SK) -->
+                                        <td class="p-2.5 border border-slate-800 align-top">
+                                            <div class="whitespace-pre-line font-medium text-slate-800">
+                                                {{ item.sk }}
+                                            </div>
+                                        </td>
+
+                                        <!-- Column 3: Standard Pembelajaran (SP) -->
+                                        <td class="p-2.5 border border-slate-800 align-top">
+                                            <div class="whitespace-pre-line font-normal text-slate-800">
+                                                {{ item.sp }}
+                                            </div>
+                                        </td>
+
+                                        <!-- Column 4: Cadangan Aktiviti -->
+                                        <td class="p-2.5 border border-slate-800 align-top">
+                                            <div class="whitespace-pre-line text-slate-800 leading-relaxed">
+                                                {{ item.aktiviti }}
+                                            </div>
+                                        </td>
+
+                                        <!-- Column 5: Bahan & Catatan -->
+                                        <td class="p-2.5 border border-slate-800 align-top bg-slate-50/30">
+                                            <div class="whitespace-pre-line text-slate-700 font-sans text-[11px]">
+                                                {{ item.catatan }}
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <tr v-if="doc.items.length === 0">
+                                        <td colspan="5" class="py-12 text-center text-slate-400 italic">
+                                            Tiada kandungan RPT dimasukkan lagi. Isikan maklumat di panel sebelah kiri.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- SIGNATURE / APPROVAL SECTION -->
+                        <div v-if="doc.settings.showSignatures" class="signature-block mt-8 pt-6 border-t border-slate-300 page-break-inside-avoid">
+                            <div class="flex items-start justify-between text-xs text-slate-800 px-4">
+                                <div>
+                                    <p class="font-semibold text-slate-500 mb-1">Disediakan Oleh:</p>
+                                    <div class="h-14 border-b border-dashed border-slate-400 w-48 mb-2"></div>
+                                    <p class="font-bold text-slate-900 uppercase">({{ doc.meta.namaGuru || '......................................................' }})</p>
+                                    <p class="text-slate-600">Guru Mata Pelajaran</p>
+                                    <p class="text-slate-500 text-[10px] mt-1">Tarikh: .......................................</p>
+                                </div>
+
+                                <div>
+                                    <p class="font-semibold text-slate-500 mb-1">Disemak & Disahkan Oleh:</p>
+                                    <div class="h-14 border-b border-dashed border-slate-400 w-48 mb-2"></div>
+                                    <p class="font-bold text-slate-900 uppercase">({{ doc.meta.namaGuruBesar || '......................................................' }})</p>
+                                    <p class="text-slate-600">{{ doc.meta.jawatanPentadbir || 'Guru Besar / GPK Pentadbiran' }}</p>
+                                    <p class="text-slate-500 text-[10px] mt-1">Tarikh: .......................................</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer timestamp -->
+                        <div class="mt-6 text-[10px] text-slate-400 flex justify-between items-center border-t border-slate-100 pt-2 font-mono">
+                            <span>Penjana RPT Sekolah © Standard KPM</span>
+                            <span>Tarikh Cetakan: {{ currentDate }}</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+        <!-- TOAST NOTIFICATION -->
+        <div v-if="toast.show" 
+             class="fixed bottom-5 right-5 no-print z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-slate-700 flex items-center space-x-3 transition-all transform translate-y-0">
+            <i :class="toast.icon" class="text-emerald-400 text-lg"></i>
+            <span class="text-xs font-medium">{{ toast.message }}</span>
+        </div>
+
+    </div>
+
+    <!-- VUE APPLICATION LOGIC -->
+    <script>
+        const { createApp } = Vue;
+
+        // Default SVG placeholder logo data URL
+        const DEFAULT_LOGO_SVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23003399'/><path d='M50 15 L80 75 L20 75 Z' fill='%23D4AF37'/><text x='50' y='60' text-anchor='middle' fill='white' font-size='16' font-weight='bold'>KPM</text></svg>";
+
+        // Sample Data Preset 1: Cikgu Zaman RPT Bahasa Inggeris Prasekolah / KSSR
+        const SAMPLE_RPT_BI = {
+            meta: {
+                kementerian: "KEMENTERIAN PENDIDIKAN MALAYSIA",
+                namaSekolah: "SEKOLAH KEBANGSAAN SERI PERMAI",
+                tajukDokumen: "RANCANGAN PENGAJARAN TAHUNAN (RPT)",
+                subjek: "BAHASA INGGERIS",
+                kelas: "PRASEKOLAH PINTAR / TAHUN 1",
+                tahunSesi: "2026 / 2027",
+                namaGuru: "CIKGU AHMAD ZAMAN BIN ABDULLAH",
+                namaGuruBesar: "PUAN HJH. SITI AMINAH BINTI KASSIM",
+                jawatanPentadbir: "Guru Besar",
+                logoDataUrl: DEFAULT_LOGO_SVG
+            },
+            settings: {
+                themeColor: "bg-slate-800",
+                fontSize: "text-xs",
+                orientation: "portrait",
+                showSignatures: true,
+                showLogo: true
+            },
+            items: [
+                {
+                    id: 1,
+                    minggu: "MINGGU 1 (10 - 14 MAC)",
+                    kemahiran: "SKILL 1: LISTENING & SPEAKING",
+                    sk: "BI 1.1 Recognise the sounds in songs and spoken language.\nBI 1.2 Listen and respond appropriately.",
+                    sp: "BI 1.1.1 Listen and recognise sounds, letters, words, phrases and simple sentences.\nBI 1.2.1 Listen to and recite nursery rhymes and tongue twisters.",
+                    aktiviti: "1. Teacher plays greeting song (e.g. 'Hello, Good Morning').\n2. Pupils listen to audio and repeat simple greeting phrases.\n3. Teacher introduces self and guides pupils to say 'My name is...'.\n4. Group singing activity with body gestures.",
+                    catatan: "BBB: Audio player, Flashcard greetings\nEMK: Language, Values\nImpak: 24/25 pupils mastered simple greetings."
+                },
+                {
+                    id: 2,
+                    minggu: "MINGGU 2 (17 - 21 MAC)",
+                    kemahiran: "SKILL 2: READING SKILLS",
+                    sk: "BI 2.1 Illustrate early reading skills.\nBI 2.2 Apply sounds of letters to read words.",
+                    sp: "BI 2.1.2 Recognise basic letter shapes and names.\nBI 2.2.1 Recognise and articulate initial sounds (/s/, /a/, /t/, /p/).",
+                    aktiviti: "1. Teacher shows letter cards /s/, /a/, /t/, /p/ with jolly phonics actions.\n2. Pupils blend sounds to form simple words (e.g., sat, pat, tap).\n3. Air writing and sandtray letter tracing activity.\n4. Matching picture cards with corresponding starting letter.",
+                    catatan: "BBB: Phonics flashcards, Sandtray\nEMK: Creativity & Innovation\nImpak: Phonics reinforcement required."
+                },
+                {
+                    id: 3,
+                    minggu: "MINGGU 3 (24 - 28 MAC)",
+                    kemahiran: "SKILL 3: WRITING SKILLS",
+                    sk: "BI 3.1 Develop fine motor skills and pre-writing techniques.\nBI 3.2 Form letters and words neatly.",
+                    sp: "BI 3.1.1 Demonstrate fine motor control through scribbling & tracing.\nBI 3.2.1 Write recognizable letters and simple words.",
+                    aktiviti: "1. Finger warming exercise & dough molding letters.\n2. Pupils trace dotted lines and letter shapes in activity books.\n3. Writing simple words (sun, ant, pan) on whiteboards.\n4. Peer peer check and sticker rewards.",
+                    catatan: "BBB: Dough, Tracing worksheets\nEMK: Fine Motor Skills\nImpak: Completed 100%."
+                },
+                {
+                    id: 4,
+                    minggu: "MINGGU 4 (31 MAC - 04 APR)",
+                    kemahiran: "SKILL 4: LANGUAGE ARTS",
+                    sk: "BI 4.1 Demonstrate appreciation of rhymes, poems & stories.",
+                    sp: "BI 4.1.2 Sing songs and recite rhymes with appropriate actions.",
+                    aktiviti: "1. Teacher conducts storybook reading ('The Very Hungry Caterpillar').\n2. Pupils roleplay characters using paper puppets.\n3. Group singing of fruit song with actions.\n4. Coloring story characters.",
+                    catatan: "BBB: Big Storybook, Finger puppets\nEMK: Values (Sharing & Caring)\nImpak: Fun learning."
+                }
+            ]
+        };
+
+        // Sample Data Preset 2: Pendidikan Khas / PPKI
+        const SAMPLE_RPT_PPKI = {
+            meta: {
+                kementerian: "KEMENTERIAN PENDIDIKAN MALAYSIA",
+                namaSekolah: "SK SERI PERMAI (PROGRAM PENDIDIKAN KHAS INTEGRASI)",
+                tajukDokumen: "RANCANGAN PENGAJARAN TAHUNAN (RPT PPKI)",
+                subjek: "PENGURUSAN KEHIDUPAN (KEMAHIRAN MANIPULATIF)",
+                kelas: "PPKI KELAS BESTARI",
+                tahunSesi: "2026 / 2027",
+                namaGuru: "CIKGU ZAMAN ABDULLAH",
+                namaGuruBesar: "PUAN HJH. SITI AMINAH BINTI KASSIM",
+                jawatanPentadbir: "GPK Pendidikan Khas",
+                logoDataUrl: ""
+            },
+            settings: {
+                themeColor: "bg-emerald-800",
+                fontSize: "text-xs",
+                orientation: "portrait",
+                showSignatures: true,
+                showLogo: false
+            },
+            items: [
+                {
+                    id: 1,
+                    minggu: "MINGGU 1",
+                    kemahiran: "1.0 MOTOR KASAR",
+                    sk: "1.1 Pergerakan asas tanpa alatan",
+                    sp: "1.1.1 Melakukan pergerakan berjalan, berlari dan melompat dengan betul.",
+                    aktiviti: "1. Tunjuk cara pergerakan berjalan secara lurus.\n2. Murid melakukan aktiviti melompat melepasi garisan.\n3. Permainan imiter: 'Ikut Gaya Saya'.",
+                    catatan: "BBB: Skitel, Wisel\nNilai: Keberanian"
+                },
+                {
+                    id: 2,
+                    minggu: "MINGGU 2",
+                    kemahiran: "2.0 MOTOR HALUS",
+                    sk: "2.1 Koordinasi mata dan tangan",
+                    sp: "2.1.1 Meramas, merenyuk dan mengoyak pelbagai bahan.",
+                    aktiviti: "1. Murid meramas doh warna pelbagai saiz.\n2. Aktiviti merenyuk kertas surat khabar bekas.\n3. Mengoyak kertas warna untuk aktiviti kolaj.",
+                    catatan: "BBB: Doh, Surat khabar, Gam\nEMK: Kreativiti"
+                }
+            ]
+        };
+
+        createApp({
+            data() {
+                return {
+                    activeTab: 'items',
+                    searchQuery: '',
+                    activeItemAccordion: 1,
+                    zoomLevel: 100,
+                    toast: {
+                        show: false,
+                        message: '',
+                        icon: 'fa-solid fa-check'
+                    },
+                    themeColors: [
+                        { name: 'Dark Slate', class: 'bg-slate-800' },
+                        { name: 'Navy Blue', class: 'bg-blue-900' },
+                        { name: 'Emerald Green', class: 'bg-emerald-800' },
+                        { name: 'Royal Maroon', class: 'bg-rose-900' },
+                        { name: 'Classic Black', class: 'bg-black' }
+                    ],
+                    doc: JSON.parse(JSON.stringify(SAMPLE_RPT_BI))
+                }
+            },
+            computed: {
+                filteredItems() {
+                    if (!this.searchQuery) return this.doc.items;
+                    const q = this.searchQuery.toLowerCase();
+                    return this.doc.items.filter(item => 
+                        (item.minggu && item.minggu.toLowerCase().includes(q)) ||
+                        (item.kemahiran && item.kemahiran.toLowerCase().includes(q)) ||
+                        (item.sk && item.sk.toLowerCase().includes(q)) ||
+                        (item.sp && item.sp.toLowerCase().includes(q)) ||
+                        (item.aktiviti && item.aktiviti.toLowerCase().includes(q))
+                    );
+                },
+                currentDate() {
+                    const today = new Date();
+                    return today.toLocaleDateString('ms-MY', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                }
+            },
+            mounted() {
+                // Try load saved state from localStorage
+                const saved = localStorage.getItem('rpt_generator_data_v1');
+                if (saved) {
+                    try {
+                        this.doc = JSON.parse(saved);
+                    } catch(e) {
+                        console.error('Could not parse saved RPT data', e);
+                    }
+                }
+            },
+            watch: {
+                doc: {
+                    deep: true,
+                    handler(newVal) {
+                        // Auto-save to localStorage
+                        localStorage.setItem('rpt_generator_data_v1', JSON.stringify(newVal));
+                    }
+                }
+            },
+            methods: {
+                toggleAccordion(id) {
+                    this.activeItemAccordion = this.activeItemAccordion === id ? null : id;
+                },
+                addNewItem() {
+                    const newId = Date.now();
+                    const nextWeekNum = this.doc.items.length + 1;
+                    const newItem = {
+                        id: newId,
+                        minggu: `MINGGU ${nextWeekNum}`,
+                        kemahiran: "SKILL 1: LISTENING & SPEAKING",
+                        sk: "BI 1.1 ...",
+                        sp: "BI 1.1.1 ...",
+                        aktiviti: "1. Aktiviti pengajaran ...\n2. Aktiviti murid ...",
+                        catatan: "BBB: Buku Teks\nEMK: Bahasa"
+                    };
+                    this.doc.items.push(newItem);
+                    this.activeItemAccordion = newId;
+                    this.showToast(`Minggu ${nextWeekNum} berjaya ditambah!`, 'fa-solid fa-plus-circle');
+                },
+                duplicateItem(index) {
+                    const source = this.doc.items[index];
+                    const clone = JSON.parse(JSON.stringify(source));
+                    clone.id = Date.now();
+                    clone.minggu = `${source.minggu} (SALINAN)`;
+                    this.doc.items.splice(index + 1, 0, clone);
+                    this.activeItemAccordion = clone.id;
+                    this.showToast('Item RPT berjaya diduplikasi.', 'fa-regular fa-copy');
+                },
+                removeItem(index) {
+                    const item = this.doc.items[index];
+                    this.doc.items.splice(index, 1);
+                    this.showToast(`Item ${item.minggu || ''} telah dipadam.`, 'fa-solid fa-trash-can');
+                },
+                moveItem(index, direction) {
+                    const targetIndex = index + direction;
+                    if (targetIndex < 0 || targetIndex >= this.doc.items.length) return;
+                    const item = this.doc.items.splice(index, 1)[0];
+                    this.doc.items.splice(targetIndex, 0, item);
+                },
+                loadSampleData(type) {
+                    if (type === 'bi') {
+                        this.doc = JSON.parse(JSON.stringify(SAMPLE_RPT_BI));
+                        this.showToast('Contoh RPT Bahasa Inggeris dimuatkan!', 'fa-solid fa-wand-magic-sparkles');
+                    } else if (type === 'ppki') {
+                        this.doc = JSON.parse(JSON.stringify(SAMPLE_RPT_PPKI));
+                        this.showToast('Contoh RPT PPKI / Prasekolah dimuatkan!', 'fa-solid fa-graduation-cap');
+                    }
+                    if (this.doc.items.length > 0) {
+                        this.activeItemAccordion = this.doc.items[0].id;
+                    }
+                },
+                handleLogoUpload(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    if (!file.type.startsWith('image/')) {
+                        this.showToast('Sila pilih fail gambar (PNG/JPG/SVG).', 'fa-solid fa-circle-exclamation');
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.doc.meta.logoDataUrl = e.target.result;
+                        this.doc.settings.showLogo = true;
+                        this.showToast('Logo sekolah berjaya dimuat naik!', 'fa-solid fa-circle-check');
+                    };
+                    reader.readAsDataURL(file);
+                },
+                removeLogo() {
+                    this.doc.meta.logoDataUrl = '';
+                    this.showToast('Logo sekolah telah dibuang.', 'fa-solid fa-trash-can');
+                },
+                resetForm() {
+                    this.doc = {
+                        meta: {
+                            kementerian: "KEMENTERIAN PENDIDIKAN MALAYSIA",
+                            namaSekolah: "NAMA SEKOLAH ANDA",
+                            tajukDokumen: "RANCANGAN PENGAJARAN TAHUNAN",
+                            subjek: "NAMA MATA PELAJARAN",
+                            kelas: "NAMA KELAS",
+                            tahunSesi: "2026 / 2027",
+                            namaGuru: "NAMA GURU",
+                            namaGuruBesar: "NAMA GURU BESAR",
+                            jawatanPentadbir: "Guru Besar",
+                            logoDataUrl: ""
+                        },
+                        settings: {
+                            themeColor: "bg-slate-800",
+                            fontSize: "text-xs",
+                            orientation: "portrait",
+                            showSignatures: true,
+                            showLogo: false
+                        },
+                        items: []
+                    };
+                    this.showToast('Borang telah dikosongkan.', 'fa-solid fa-rotate-left');
+                },
+                exportJSON() {
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.doc, null, 2));
+                    const downloadAnchor = document.createElement('a');
+                    const fileName = `RPT_${(this.doc.meta.subjek || 'DOKUMEN').replace(/\s+/g, '_')}_${this.doc.meta.tahunSesi.replace(/[\s\/]/g, '_')}.json`;
+                    downloadAnchor.setAttribute("href", dataStr);
+                    downloadAnchor.setAttribute("download", fileName);
+                    document.body.appendChild(downloadAnchor);
+                    downloadAnchor.click();
+                    downloadAnchor.remove();
+                    this.showToast('Fail JSON RPT berjaya dimuat turun.', 'fa-solid fa-download');
+                },
+                triggerImport() {
+                    this.$refs.fileInput.click();
+                },
+                importJSON(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const imported = JSON.parse(e.target.result);
+                            if (imported && imported.meta && Array.isArray(imported.items)) {
+                                this.doc = imported;
+                                this.showToast('Data RPT berjaya di-import daripada JSON!', 'fa-solid fa-file-import');
+                            } else {
+                                this.showToast('Format JSON tidak sah.', 'fa-solid fa-triangle-exclamation');
+                            }
+                        } catch(err) {
+                            this.showToast('Ralat ketika membaca fail JSON.', 'fa-solid fa-triangle-exclamation');
+                        }
+                    };
+                    reader.readAsText(file);
+                    event.target.value = '';
+                },
+                copyHtmlCode() {
+                    const docEl = document.getElementById('rpt-document-printable');
+                    if (!docEl) return;
+                    
+                    const htmlContent = `
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <title>RPT ${this.doc.meta.subjek} - ${this.doc.meta.namaSekolah}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; color: #111; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: left; vertical-align: top; font-size: 12px; }
+        th { background-color: #1e293b; color: #fff; text-transform: uppercase; }
+        .header-box { text-center; margin-bottom: 20px; }
+        .header-box h2 { margin: 2px 0; font-size: 18px; }
+        .header-box h3 { margin: 5px 0; font-size: 14px; background: #f1f5f9; padding: 6px; }
+    </style>
+</head>
+<body>
+    ${docEl.innerHTML}
+</body>
+</html>`;
+
+                    // Copy to clipboard
+                    const dummy = document.createElement("textarea");
+                    document.body.appendChild(dummy);
+                    dummy.value = htmlContent;
+                    dummy.select();
+                    document.execCommand("copy");
+                    document.body.removeChild(dummy);
+
+                    this.showToast('Kod HTML Dokumen RPT berjaya disalin!', 'fa-regular fa-copy');
+                },
+                printDocument() {
+                    window.print();
+                },
+                zoomIn() {
+                    if (this.zoomLevel < 140) this.zoomLevel += 10;
+                },
+                zoomOut() {
+                    if (this.zoomLevel > 60) this.zoomLevel -= 10;
+                },
+                zoomReset() {
+                    this.zoomLevel = 100;
+                },
+                showToast(msg, icon = 'fa-solid fa-check') {
+                    this.toast.message = msg;
+                    this.toast.icon = icon;
+                    this.toast.show = true;
+                    setTimeout(() => {
+                        this.toast.show = false;
+                    }, 3000);
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
